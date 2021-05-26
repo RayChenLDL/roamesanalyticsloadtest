@@ -1,0 +1,28 @@
+echo "Pull Data Grids Load Test Docker Image"
+docker login https://docker.pkg.github.com -u $GitHub_UserName --password $GitHub_Password
+docker pull docker.pkg.github.com/fugro/fugro.roames.analytics.loadtest/roamesanalyticsloadtest:v0.4
+
+
+echo "********************** Running Load Test *****************"
+
+
+set +e
+
+docker run --rm --memory="8g" --cpus="2.0" \
+-e TESTENV=${Environment} \
+-e JMETER_TEST_PLAN="Standalone_Data_Grids_"${Environment} \
+-e ENW_VUs="5" \
+-e EQ_VUs="5" \
+-e GP_VUs="5" \
+-e WPD_VUs="5" \
+-e PSEG_VUs="5" \
+-e MEC_VUs="5" \
+-e Entergy_VUs="5" \
+-e TasNetworks_VUs="5" \
+-e WELNetworks_VUs="5" \
+-e Duration="1980" \
+-v "$WORKSPACE:/opt/apache-jmeter-5.4.1/result" \
+docker.pkg.github.com/fugro/fugro.roames.analytics.loadtest/roamesanalyticsloadtest:v0.4
+
+ERROR=$?
+set -e
