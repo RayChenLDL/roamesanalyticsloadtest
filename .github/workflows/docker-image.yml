@@ -1,0 +1,45 @@
+name: Publish Load Test Docker Image
+
+on:  
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+  release:
+    types: [prereleased, released]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: tag to give the built image
+        required: true
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Tag as as manually triggered
+      if: ${{ github.event_name == 'workflow_dispatch'}}
+      run: |
+        echo "image_tag=${{ github.event.inputs.tag }}" >> $GITHUB_ENV
+    - name: Tag as release
+      if: ${{ github.event_name == 'release' && (github.event.action == 'released' || github.event.action == 'prereleased') }}
+      run: |
+        export TAG=$(git describe --tags --exact-match)
+        echo "image_tag=${TAG}" >> $GITHUB_ENV
+    - name: Tag to latest
+      if: ${{ github.event_name != 'workflow_dispatch' &&  github.event_name != 'release'}}
+      run: |
+        echo "image_tag=latest" >> $GITHUB_ENV
+    
+    - name: Build the Docker image
+      run: |        
+        docker login https://docker.pkg.github.com -u "${{ github.actor }}" -p "${GITHUB_TOKEN}"
+        docker build . --file docker/Dockerfile --tag docker.pkg.github.com/raychendl/roamesanalyticsloadtest/roamesanalyticsloadtest:${image_tag}
+        docker push docker.pkg.github.com/raychendl/roamesanalyticsloadtest/roamesanalyticsloadtest:${image_tag}
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
